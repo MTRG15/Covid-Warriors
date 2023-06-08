@@ -1,6 +1,7 @@
 # Python Arcade Shooting Gallery!
 import pygame
 import math
+import asyncio
 
 pygame.init()
 fps = 60
@@ -259,119 +260,123 @@ def draw_pause():
         clicked = True
         new_coords = True
 
+async def main():
+    global counter, level, new_coords, menu, game_over, pause, shot, run, best_freeplay, best_ammo, best_timed, resume_level, write_values, total_shots, clicked, time_passed, time_remaining, timer, level, points, mode, ammo, counter, clicked, write_values, new_coords, one_coords,two_coords,three_coords
+    run = True
+    while run:
+        timer.tick(fps)
+        if level != 0:
+            if counter < 60:
+                counter += 1
+            else:
+                counter = 1
+                time_passed += 1
+                if mode == 2:
+                    time_remaining -= 1
 
-run = True
-while run:
-    timer.tick(fps)
-    if level != 0:
-        if counter < 60:
-            counter += 1
-        else:
-            counter = 1
-            time_passed += 1
-            if mode == 2:
-                time_remaining -= 1
+        if new_coords:
+            # initialize enemy coordinates
+            one_coords = [[], [], []]
+            two_coords = [[], [], []]
+            three_coords = [[], [], [], []]
+            for i in range(3):
+                my_list = targets[1]
+                for j in range(my_list[i]):
+                    one_coords[i].append((WIDTH // (my_list[i]) * j, 300 - (i * 150) + 30 * (j % 2)))
+            for i in range(3):
+                my_list = targets[2]
+                for j in range(my_list[i]):
+                    two_coords[i].append((WIDTH // (my_list[i]) * j, 300 - (i * 150) + 30 * (j % 2)))
+            for i in range(4):
+                my_list = targets[3]
+                for j in range(my_list[i]):
+                    three_coords[i].append((WIDTH // (my_list[i]) * j, 300 - (i * 100) + 30 * (j % 2)))
+            new_coords = False
 
-    if new_coords:
-        # initialize enemy coordinates
-        one_coords = [[], [], []]
-        two_coords = [[], [], []]
-        three_coords = [[], [], [], []]
-        for i in range(3):
-            my_list = targets[1]
-            for j in range(my_list[i]):
-                one_coords[i].append((WIDTH // (my_list[i]) * j, 300 - (i * 150) + 30 * (j % 2)))
-        for i in range(3):
-            my_list = targets[2]
-            for j in range(my_list[i]):
-                two_coords[i].append((WIDTH // (my_list[i]) * j, 300 - (i * 150) + 30 * (j % 2)))
-        for i in range(4):
-            my_list = targets[3]
-            for j in range(my_list[i]):
-                three_coords[i].append((WIDTH // (my_list[i]) * j, 300 - (i * 100) + 30 * (j % 2)))
-        new_coords = False
+        screen.fill('black')
+        screen.blit(bgs[level - 1], (0, 0))
+        screen.blit(banners[level - 1], (0, HEIGHT - 200))
+        if menu:
+            level = 0
+            draw_menu()
+        if game_over:
+            level = 0
+            draw_game_over()
+        if pause:
+            level = 0
+            draw_pause()
 
-    screen.fill('black')
-    screen.blit(bgs[level - 1], (0, 0))
-    screen.blit(banners[level - 1], (0, HEIGHT - 200))
-    if menu:
-        level = 0
-        draw_menu()
-    if game_over:
-        level = 0
-        draw_game_over()
-    if pause:
-        level = 0
-        draw_pause()
+        if level == 1:
+            target_boxes = draw_level(one_coords)
+            one_coords = move_level(one_coords)
+            if shot:
+                one_coords = check_shot(target_boxes, one_coords)
+                shot = False
+        elif level == 2:
+            target_boxes = draw_level(two_coords)
+            two_coords = move_level(two_coords)
+            if shot:
+                two_coords = check_shot(target_boxes, two_coords)
+                shot = False
+        elif level == 3:
+            target_boxes = draw_level(three_coords)
+            three_coords = move_level(three_coords)
+            if shot:
+                three_coords = check_shot(target_boxes, three_coords)
+                shot = False
+        if level > 0:
+            draw_gun()
+            draw_score()
 
-    if level == 1:
-        target_boxes = draw_level(one_coords)
-        one_coords = move_level(one_coords)
-        if shot:
-            one_coords = check_shot(target_boxes, one_coords)
-            shot = False
-    elif level == 2:
-        target_boxes = draw_level(two_coords)
-        two_coords = move_level(two_coords)
-        if shot:
-            two_coords = check_shot(target_boxes, two_coords)
-            shot = False
-    elif level == 3:
-        target_boxes = draw_level(three_coords)
-        three_coords = move_level(three_coords)
-        if shot:
-            three_coords = check_shot(target_boxes, three_coords)
-            shot = False
-    if level > 0:
-        draw_gun()
-        draw_score()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_position = pygame.mouse.get_pos()
+                if (0 < mouse_position[0] < WIDTH) and (0 < mouse_position[1] < HEIGHT - 200):
+                    shot = True
+                    total_shots += 1
+                    if mode == 1:
+                        ammo -= 1
+                if (670 < mouse_position[0] < 860) and (660 < mouse_position[1] < 715):
+                    resume_level = level
+                    pause = True
+                    clicked = True
+                if (670 < mouse_position[0] < 860) and (715 < mouse_position[1] < 760):
+                    menu = True
+                    pygame.mixer.music.play()
+                    clicked = True
+                    new_coords = True
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1 and clicked:
+                clicked = False
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_position = pygame.mouse.get_pos()
-            if (0 < mouse_position[0] < WIDTH) and (0 < mouse_position[1] < HEIGHT - 200):
-                shot = True
-                total_shots += 1
-                if mode == 1:
-                    ammo -= 1
-            if (670 < mouse_position[0] < 860) and (660 < mouse_position[1] < 715):
-                resume_level = level
-                pause = True
-                clicked = True
-            if (670 < mouse_position[0] < 860) and (715 < mouse_position[1] < 760):
-                menu = True
-                pygame.mixer.music.play()
-                clicked = True
+        if level > 0:
+            if target_boxes == [[], [], []] and level < 3:
+                level += 1
+            if (level == 3 and target_boxes == [[], [], [], []]) or (mode == 1 and ammo == 0) or (
+                    mode == 2 and time_remaining == 0):
                 new_coords = True
-        if event.type == pygame.MOUSEBUTTONUP and event.button == 1 and clicked:
-            clicked = False
+                pygame.mixer.music.play()
+                if mode == 0:
+                    if time_passed < best_freeplay or best_freeplay == 0:
+                        best_freeplay = time_passed
+                        write_values = True
+                if mode == 1:
+                    if points > best_ammo:
+                        best_ammo = points
+                        write_values = True
+                if mode == 2:
+                    if points > best_timed:
+                        best_timed = points
+                        write_values = True
+                game_over = True
+        if write_values:
+            file = open('high_scores.txt', 'w')
+            file.write(f'{best_freeplay}\n{best_ammo}\n{best_timed}')
+            file.close()
+            write_values = False
+        pygame.display.flip()
+        await asyncio.sleep(0)
 
-    if level > 0:
-        if target_boxes == [[], [], []] and level < 3:
-            level += 1
-        if (level == 3 and target_boxes == [[], [], [], []]) or (mode == 1 and ammo == 0) or (
-                mode == 2 and time_remaining == 0):
-            new_coords = True
-            pygame.mixer.music.play()
-            if mode == 0:
-                if time_passed < best_freeplay or best_freeplay == 0:
-                    best_freeplay = time_passed
-                    write_values = True
-            if mode == 1:
-                if points > best_ammo:
-                    best_ammo = points
-                    write_values = True
-            if mode == 2:
-                if points > best_timed:
-                    best_timed = points
-                    write_values = True
-            game_over = True
-    if write_values:
-        file = open('high_scores.txt', 'w')
-        file.write(f'{best_freeplay}\n{best_ammo}\n{best_timed}')
-        file.close()
-        write_values = False
-    pygame.display.flip()
+asyncio.run(main())
 pygame.quit()
